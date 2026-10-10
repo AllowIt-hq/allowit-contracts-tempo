@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "foundryVersion": "1.8.5",
+  "dependencies": {
+    "openzeppelin-contracts": {
+      "repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+      "revision": "fcbae5394ae8ad52d8e580a3477db99814b9d565",
+      "license": "MIT"
+    },
+    "forge-std": {
+      "repository": "https://github.com/foundry-rs/forge-std",
+      "revision": "0258fe875e1d8e207c1eb7175e542ea32356773c",
+      "license": "MIT OR Apache-2.0"
+    },
+    "tempo-std": {
+      "repository": "https://github.com/tempoxyz/tempo-std",
+      "revision": "701c4bf8d8d275f44c025b4686b42a82a83a3184",
+      "license": "MIT OR Apache-2.0"
+    }
+  }
+}

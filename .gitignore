@@ -1,0 +1,12 @@
+/out/
+/cache/
+/broadcast/
+/lib/
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.sqlite
+*.db
+node_modules/
