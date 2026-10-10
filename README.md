@@ -44,12 +44,12 @@ forge install --no-git tempo-std=tempoxyz/tempo-std@rev=701c4bf8d8d275f44c025b46
 
 `lib/`, build output, broadcasts and environment files are ignored. This repository contains only the Tempo contracts, their tests and public documentation; backend/frontend integration and internal project materials belong in their separate repositories. Anvil/Forge signing keys in tests are published synthetic fixtures, never user keys.
 
-Use official upstream Foundry v1.8.5 or later with Tempo support. Archived `tempoxyz/tempo-foundry` and `tempo-ts` should not be used for a new integration. The installed v1.8.5 CLI uses `anvil --network tempo` and `forge --network tempo`; `foundry.toml` enables Tempo execution. Run `forge config` or help against the installed release to verify exact supported flags.
+Use official upstream Foundry v1.8.5 or later with Tempo support. Archived `tempoxyz/tempo-foundry` and `tempo-ts` should not be used for a new integration. The installed v1.8.5 CLI uses `anvil --network tempo` and `forge test --network tempo`; `foundry.toml` enables Tempo execution. `forge build` compiles the contracts without a network argument. Run `forge config` or help against the installed release to verify exact supported flags.
 
 ```
 forge build
 forge fmt --check
-forge test -vv
+forge test --network tempo -vv
 anvil --network tempo --host 127.0.0.1
 ```
 
