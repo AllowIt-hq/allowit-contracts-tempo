@@ -20,7 +20,7 @@ test('wallet initialization creates separate private files and a public manifest
     const publicJson = await readFile(settings.manifest,'utf8');
     for (const key of keys) assert.ok(!publicJson.includes(key));
     await assert.rejects(makeWallets(settings), /refuses to overwrite/);
-    assert.equal((await readFile(join(settings.walletDir,'owner.key'),'utf8')).trim(), keys[1]);
+    assert.ok((await readFile(join(settings.walletDir,'owner.key'),'utf8')).trim() === keys[1], 'The original owner key was preserved.');
   } finally {await rm(root, {recursive:true, force:true});}
 });
 
