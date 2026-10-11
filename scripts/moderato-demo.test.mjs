@@ -31,6 +31,7 @@ test('command parsing rejects credential-bearing endpoints, absent private paths
   assert.throws(() => options([...base,'--rpc','http://127.0.0.1:8545']), /HTTPS/);
   assert.throws(() => options([...base,'--manifest','/tmp/other.json']), /unique/);
   assert.throws(() => options(['deploy']), /absolute/);
+  assert.throws(() => options(['wallets','--wallet-dir','/tmp/keys','--manifest','/tmp/keys/owner.key']), /outside the private/);
   assert.equal(options(['verify','--manifest','/tmp/deployment.json']).walletDir, undefined);
 });
 

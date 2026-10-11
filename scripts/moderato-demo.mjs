@@ -1,6 +1,6 @@
 import {execFileSync} from 'node:child_process';
 import {lstat, mkdir, readFile, realpath, rename, stat, writeFile} from 'node:fs/promises';
-import {dirname, isAbsolute, resolve} from 'node:path';
+import {dirname, isAbsolute, relative, resolve, sep} from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {createPublicClient, createWalletClient, defineChain, http, isAddress, keccak256, parseAbi, parseUnits} from 'viem';
 import {generatePrivateKey, privateKeyToAccount} from 'viem/accounts';
@@ -12,10 +12,15 @@ export const ALPHA_USD = '0x20c0000000000000000000000000000000000001';
 export const ROLES = ['deployer', 'owner', 'executor', 'authority', 'recipient'];
 const repository = fileURLToPath(new URL('../', import.meta.url));
 const tokenAbi = parseAbi(['function decimals() view returns (uint8)', 'function currency() view returns (string)', 'function symbol() view returns (string)', 'function balanceOf(address) view returns (uint256)']);
-const publicFields = ['schemaVersion','stage','network','chainId','rpcUrl','token','feeToken','tokenSymbol',...ROLES,'sourceRevision','createdAt','factory','factoryCodeHash','deploymentTransactionHash','deploymentBlockNumber','compilerVersion','verifiedAt','fundedBalances','fundedAt','appUrl'];
+const publicFields = ['schemaVersion','stage','network','chainId','rpcUrl','token','feeToken','tokenSymbol',...ROLES,'sourceRevision','verifiedSourceRevision','createdAt','factory','factoryCodeHash','deploymentTransactionHash','deploymentBlockNumber','compilerVersion','verifiedAt','fundedBalances','fundedAt','appUrl'];
 export const publicManifest = value => Object.fromEntries(publicFields.filter(name => Object.hasOwn(value,name)).map(name => [name,value[name]]));
 class DeploymentError extends Error {}
 const requireValue = (condition, message) => {if (!condition) throw new DeploymentError(message);};
+function checkOutputPath(settings) {
+  if (!settings.walletDir) return;
+  const difference = relative(settings.walletDir, settings.manifest);
+  requireValue(difference && (difference === '..' || difference.startsWith(`..${sep}`) || isAbsolute(difference)), 'The public manifest must be outside the private wallet directory.');
+}
 
 export function options(argv) {
   const [command, ...args] = argv;
@@ -35,6 +40,7 @@ export function options(argv) {
   requireValue(isAddress(parsed.token) && isAddress(parsed.feeToken) && !/^0x0{40}$/i.test(parsed.token) && !/^0x0{40}$/i.test(parsed.feeToken), 'Supply nonzero TIP-20 token and fee-token addresses.');
   if (parsed.walletDir) parsed.walletDir = resolve(parsed.walletDir);
   parsed.manifest = resolve(parsed.manifest); parsed.artifact = resolve(parsed.artifact);
+  checkOutputPath(parsed);
   return parsed;
 }
 
@@ -77,6 +83,7 @@ export function checkManifest(manifest, settings, wallets) {
   }
 }
 export async function makeWallets(settings) {
+  checkOutputPath(settings);
   const directory = await secureDirectory(settings.walletDir, true);
   for (const role of ROLES) {
     let exists = false;
@@ -172,7 +179,7 @@ async function verify(client, settings, manifest, artifact) {
   requireValue(finalized, 'Deployment is not finalized after the bounded wait; rerun verify without broadcasting.');
   const canonicalBlock = await client.getBlock({blockNumber:receipt.blockNumber});
   requireValue(canonicalBlock.hash === receipt.blockHash, 'Deployment receipt is not on the canonical chain.');
-  const result = {...manifest, stage:'deployed', factory:receipt.contractAddress, factoryCodeHash:artifact.runtimeHash, deploymentBlockNumber:receipt.blockNumber.toString(), compilerVersion:artifact.compilerVersion, verifiedAt:new Date().toISOString()};
+  const result = {...manifest, stage:'deployed', factory:receipt.contractAddress, factoryCodeHash:artifact.runtimeHash, deploymentBlockNumber:receipt.blockNumber.toString(), compilerVersion:artifact.compilerVersion, verifiedSourceRevision:revision(), verifiedAt:new Date().toISOString()};
   await publicWrite(settings.manifest, result);
   return result;
 }
