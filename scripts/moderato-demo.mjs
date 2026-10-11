@@ -11,7 +11,7 @@ export const RPC_URL = 'https://rpc.moderato.tempo.xyz';
 export const ALPHA_USD = '0x20c0000000000000000000000000000000000001';
 export const ROLES = ['deployer', 'owner', 'executor', 'authority', 'recipient'];
 const repository = fileURLToPath(new URL('../', import.meta.url));
-const tokenAbi = parseAbi(['function decimals() view returns (uint8)', 'function symbol() view returns (string)', 'function balanceOf(address) view returns (uint256)']);
+const tokenAbi = parseAbi(['function decimals() view returns (uint8)', 'function currency() view returns (string)', 'function symbol() view returns (string)', 'function balanceOf(address) view returns (uint256)']);
 const publicFields = ['schemaVersion','stage','network','chainId','rpcUrl','token','feeToken','tokenSymbol',...ROLES,'sourceRevision','createdAt','factory','factoryCodeHash','deploymentTransactionHash','deploymentBlockNumber','compilerVersion','verifiedAt','fundedBalances','fundedAt','appUrl'];
 export const publicManifest = value => Object.fromEntries(publicFields.filter(name => Object.hasOwn(value,name)).map(name => [name,value[name]]));
 class DeploymentError extends Error {}
@@ -28,11 +28,13 @@ export function options(argv) {
     requireValue(name && value && !value.startsWith('--') && !seen.has(name), 'Arguments must be unique named options with values.');
     seen.add(name); parsed[name] = value;
   }
-  requireValue(parsed.walletDir && isAbsolute(parsed.walletDir) && parsed.manifest && isAbsolute(parsed.manifest), 'Supply absolute --wallet-dir and --manifest paths.');
+  requireValue(parsed.manifest && isAbsolute(parsed.manifest) && (command === 'verify' || (parsed.walletDir && isAbsolute(parsed.walletDir))), 'Supply absolute --wallet-dir and --manifest paths; public verify only needs --manifest.');
+  if (parsed.walletDir) requireValue(isAbsolute(parsed.walletDir), 'Wallet directory must be an absolute path.');
   const rpc = new URL(parsed.rpc);
   requireValue(rpc.protocol === 'https:' && !rpc.username && !rpc.password && !rpc.search && !rpc.hash, 'RPC must be HTTPS without credentials or query parameters.');
   requireValue(isAddress(parsed.token) && isAddress(parsed.feeToken) && !/^0x0{40}$/i.test(parsed.token) && !/^0x0{40}$/i.test(parsed.feeToken), 'Supply nonzero TIP-20 token and fee-token addresses.');
-  parsed.walletDir = resolve(parsed.walletDir); parsed.manifest = resolve(parsed.manifest); parsed.artifact = resolve(parsed.artifact);
+  if (parsed.walletDir) parsed.walletDir = resolve(parsed.walletDir);
+  parsed.manifest = resolve(parsed.manifest); parsed.artifact = resolve(parsed.artifact);
   return parsed;
 }
 
@@ -102,6 +104,7 @@ export async function preflight(client, settings) {
     const code = await client.getCode({address:token});
     requireValue(code && code !== '0x', 'A configured TIP-20 token has no deployed code.');
     requireValue(await client.readContract({address:token, abi:tokenAbi, functionName:'decimals'}) === 6, 'Demo tokens must have six decimals.');
+    requireValue(await client.readContract({address:token, abi:tokenAbi, functionName:'currency'}) === 'USD', 'Payment and fee tokens must use the USD currency.');
     const symbol = await client.readContract({address:token, abi:tokenAbi, functionName:'symbol'});
     requireValue(typeof symbol === 'string' && symbol.length > 0 && symbol.length <= 32, 'The TIP-20 token symbol is invalid.');
     if (token.toLowerCase() === settings.token.toLowerCase()) tokenSymbol = symbol;
@@ -110,8 +113,8 @@ export async function preflight(client, settings) {
 }
 const balance = (client, token, address) => client.readContract({address:token, abi:tokenAbi, functionName:'balanceOf', args:[address]});
 async function fund(client, settings, wallets, manifest) {
-  const minimum = parseUnits('10', 6);
   for (const role of ['deployer', 'owner', 'executor']) {
+    const minimum = parseUnits(role === 'owner' ? '40' : '10', 6);
     const address = wallets[role].address;
     if (await balance(client, settings.feeToken, address) >= minimum && await balance(client, settings.token, address) >= minimum) continue;
     // One faucet call per account; an uncertain response never causes an automatic second call.
@@ -142,19 +145,31 @@ export function checkDeploymentResume(manifest, runtimeHash) {
   if (['pending', 'deployed'].includes(manifest.stage)) requireValue(/^0x[0-9a-f]{64}$/i.test(manifest.deploymentTransactionHash || ''), 'Deployment recovery requires the original transaction hash.');
   else requireValue(manifest.stage === 'wallets-ready', 'Unknown deployment stage.');
 }
+export function checkFactoryTransaction(transaction, manifest, artifact) {
+  requireValue(BigInt(transaction.chainId ?? 0) === BigInt(CHAIN_ID) && transaction.type === 'tempo' && transaction.typeHex === '0x76', 'Factory deployment must be a native Tempo 0x76 transaction on Moderato 42431.');
+  requireValue(transaction.from.toLowerCase() === manifest.deployer.toLowerCase() && transaction.feeToken?.toLowerCase() === manifest.feeToken.toLowerCase(), 'Deployment signer or fee token differs from the manifest.');
+  const call = transaction.calls?.length === 1 ? transaction.calls[0] : null;
+  requireValue(call && call.to == null && BigInt(call.value ?? 0) === 0n && call.data?.toLowerCase() === artifact.bytecode.toLowerCase(), 'Deployment must contain exactly the compiled factory creation call and zero native value.');
+}
 async function verify(client, settings, manifest, artifact) {
   requireValue(/^0x[0-9a-f]{64}$/i.test(manifest.deploymentTransactionHash || ''), 'The deployment manifest has no recorded transaction hash.');
   const receipt = await client.waitForTransactionReceipt({hash:manifest.deploymentTransactionHash, confirmations:2, timeout:180_000});
   requireValue(receipt.status === 'success' && receipt.contractAddress && isAddress(receipt.contractAddress), 'Factory deployment did not produce a successful contract creation receipt.');
   if (manifest.factory) requireValue(manifest.factory.toLowerCase() === receipt.contractAddress.toLowerCase(), 'Factory address differs from the original deployment receipt.');
   const transaction = await client.getTransaction({hash:manifest.deploymentTransactionHash});
-  requireValue(transaction.from.toLowerCase() === manifest.deployer.toLowerCase() && transaction.to === null && transaction.input.toLowerCase() === artifact.bytecode.toLowerCase(), 'Deployment transaction differs from the recorded deployer or compiled creation bytecode.');
+  checkFactoryTransaction(transaction, manifest, artifact);
   const code = await client.getCode({address:receipt.contractAddress, blockNumber:receipt.blockNumber});
   requireValue(code && keccak256(code).toLowerCase() === artifact.runtimeHash.toLowerCase(), 'Deployed factory code hash differs from the compiled runtime.');
   const currentCode = await client.getCode({address:receipt.contractAddress});
   requireValue(currentCode && keccak256(currentCode).toLowerCase() === artifact.runtimeHash.toLowerCase(), 'Current factory code hash differs from the deployment receipt.');
-  const finalizedBlock = await client.getBlock({blockTag:'finalized'});
-  requireValue(finalizedBlock.number >= receipt.blockNumber, 'Deployment is not finalized yet; rerun verify without broadcasting.');
+  const finalityDeadline = Date.now() + 120_000;
+  let finalized = false;
+  do {
+    const finalizedBlock = await client.getBlock({blockTag:'finalized'});
+    if (finalizedBlock.number >= receipt.blockNumber) {finalized = true; break;}
+    await new Promise(done => setTimeout(done, 2_000));
+  } while (Date.now() < finalityDeadline);
+  requireValue(finalized, 'Deployment is not finalized after the bounded wait; rerun verify without broadcasting.');
   const canonicalBlock = await client.getBlock({blockNumber:receipt.blockNumber});
   requireValue(canonicalBlock.hash === receipt.blockHash, 'Deployment receipt is not on the canonical chain.');
   const result = {...manifest, stage:'deployed', factory:receipt.contractAddress, factoryCodeHash:artifact.runtimeHash, deploymentBlockNumber:receipt.blockNumber.toString(), compilerVersion:artifact.compilerVersion, verifiedAt:new Date().toISOString()};
@@ -163,7 +178,11 @@ async function verify(client, settings, manifest, artifact) {
 }
 export async function run(settings) {
   if (settings.command === 'wallets') return makeWallets(settings);
-  const wallets = await accounts(settings.walletDir), manifest = await manifestRead(settings.manifest);
+  const manifest = await manifestRead(settings.manifest);
+  const wallets = settings.command === 'verify' ? Object.fromEntries(ROLES.map(role => {
+    requireValue(isAddress(manifest[role]) && !/^0x0{40}$/i.test(manifest[role]), `Public manifest ${role} address is invalid.`);
+    return [role,{address:manifest[role]}];
+  })) : await accounts(settings.walletDir);
   checkManifest(manifest, settings, wallets);
   const chain = defineChain({...tempoModerato, feeToken:settings.feeToken, rpcUrls:{default:{http:[settings.rpc]}}});
   const client = createPublicClient({chain, transport:http(settings.rpc, {retryCount:0, timeout:30_000})});
