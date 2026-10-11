@@ -548,14 +548,71 @@ contract AllowItTempoVaultTest is Test {
         assertEq(token.balanceOf(attacker), 0);
     }
 
-    function testFactoryRejectsZeroAndOverBudgetFunding() public {
+    function testFactoryRejectsZeroFunding() public {
         Vault.Terms memory t = terms();
         vm.startPrank(owner);
         vm.expectRevert(Factory.InvalidFunding.selector);
         factory.createVault(policyId, address(token), executor, authority, t, 0);
-        vm.expectRevert(Factory.InvalidFunding.selector);
-        factory.createVault(policyId, address(token), executor, authority, t, t.totalUnits + 1);
         vm.stopPrank();
+    }
+
+    function testFactoryFundingAboveCapsDoesNotIncreaseAuthorizedSpending() public {
+        assertEq(factory.DEPOSIT_TERMS_VERSION(), 1);
+        Vault.Terms memory t = terms();
+        t.totalUnits = 2_000_000;
+        t.dailyUnits = 1_000_000;
+        t.actionUnits = 500_000;
+        vm.prank(owner);
+        vault = Vault(factory.createVault(policyId, address(token), executor, authority, t, 20_000_000));
+        assertEq(token.balanceOf(address(vault)), 20_000_000);
+        (Vault.Terms memory installed,,,,,,,) = vault.getState();
+        assertEq(installed.totalUnits, t.totalUnits);
+        assertEq(installed.dailyUnits, t.dailyUnits);
+        assertEq(installed.actionUnits, t.actionUnits);
+
+        Vault.Execution memory r = request(t.actionUnits + 1);
+        bytes memory signature = sign(r);
+        vm.expectRevert(Vault.LimitExceeded.selector);
+        vm.prank(executor);
+        vault.execute(r, signature);
+        execute(500_000);
+        execute(500_000);
+        r = request(1);
+        signature = sign(r);
+        vm.expectRevert(Vault.LimitExceeded.selector);
+        vm.prank(executor);
+        vault.execute(r, signature);
+        vm.warp(vm.getBlockTimestamp() + 1 days);
+        execute(500_000);
+        execute(500_000);
+        vm.warp(vm.getBlockTimestamp() + 1 days);
+        r = request(1);
+        signature = sign(r);
+        vm.expectRevert(Vault.LimitExceeded.selector);
+        vm.prank(executor);
+        vault.execute(r, signature);
+        assertEq(vault.spent(), t.totalUnits);
+        assertEq(token.balanceOf(address(vault)), 18_000_000);
+        vm.prank(owner);
+        vault.withdrawRemaining();
+        assertEq(token.balanceOf(address(vault)), 0);
+    }
+
+    function testFactoryRejectsWrongCurrencyAndPrecisionBeforeFunding() public {
+        for (uint256 i; i < 2; ++i) {
+            if (i == 0) {
+                vm.mockCall(address(token), abi.encodeWithSignature("currency()"), abi.encode("EUR"));
+            } else {
+                vm.mockCall(address(token), abi.encodeWithSignature("currency()"), abi.encode("USD"));
+                vm.mockCall(address(token), abi.encodeWithSignature("decimals()"), abi.encode(uint8(18)));
+            }
+            uint256 ownerBefore = token.balanceOf(owner);
+            vm.expectRevert(Vault.InvalidToken.selector);
+            vm.prank(owner);
+            factory.createVault(policyId, address(token), executor, authority, terms(), 20_000_000);
+            assertEq(factory.vaultOf(owner, policyId), address(0));
+            assertEq(token.balanceOf(owner), ownerBefore);
+        }
     }
 
     function testUnknownTokenRejectedByCanonicalFactory() public {

@@ -9,6 +9,8 @@ import {AllowItTempoVault} from "./AllowItTempoVault.sol";
 /// @notice Permissionless factory. A caller can create/fund only its own vault.
 contract AllowItTempoVaultFactory is ReentrancyGuard {
     using SafeERC20 for IERC20;
+    /// @notice Deposit-selected terms with funding independent of spending caps.
+    uint256 public constant DEPOSIT_TERMS_VERSION = 1;
     mapping(address owner => mapping(bytes32 policyId => address vault)) public vaultOf;
     error AlreadyCreated();
     error DeliveryMismatch();
@@ -31,7 +33,7 @@ contract AllowItTempoVaultFactory is ReentrancyGuard {
         uint256 initialAmount
     ) external nonReentrant returns (address vault) {
         if (vaultOf[msg.sender][policyId] != address(0)) revert AlreadyCreated();
-        if (initialAmount == 0 || initialAmount > terms.totalUnits) revert InvalidFunding();
+        if (initialAmount == 0) revert InvalidFunding();
         bytes32 salt = keccak256(abi.encode(msg.sender, policyId));
         vault = address(new AllowItTempoVault{salt: salt}(msg.sender, token, executor, authority, policyId, terms));
         vaultOf[msg.sender][policyId] = vault;
