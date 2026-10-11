@@ -1,0 +1,14 @@
+{
+  "name": "allowit-tempo-deployment",
+  "private": true,
+  "type": "module",
+  "engines": {"node": ">=24"},
+  "scripts": {
+    "demo:wallets": "node scripts/moderato-demo.mjs wallets",
+    "demo:fund": "node scripts/moderato-demo.mjs fund",
+    "demo:deploy": "node scripts/moderato-demo.mjs deploy",
+    "demo:verify": "node scripts/moderato-demo.mjs verify",
+    "test:deployment": "node --test scripts/moderato-demo.test.mjs"
+  },
+  "dependencies": {"viem": "2.57.4"}
+}

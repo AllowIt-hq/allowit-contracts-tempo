@@ -59,6 +59,23 @@ Ordinary Ethereum simulation does not reproduce Tempo's stateful precompiles or 
 
 For actual wallet transactions, use current `viem/tempo` or Viem's Tempo chain formatters, explicitly select the configured USD TIP-20 fee token, and confirm the wallet's account and chain before signing. Do not use `eth_getBalance` as the stablecoin balance; use TIP-20 `balanceOf`.
 
+## Moderato demo deployment
+
+The Node 24 tooling creates five separate random demo accounts: deployer, owner, executor, evidence authority and recipient. Keys are plain hexadecimal files in an owner-only POSIX directory outside every Git checkout; they never appear in the public manifest or console. Install the pinned Solidity dependencies above, then run `npm ci` and `forge build`. Choose fresh external paths:
+
+```sh
+wallet_dir="$HOME/.local/share/allowit-tempo-moderato-demo"
+manifest=/absolute/path/to/demo/config/deployment.json
+npm run demo:wallets -- --wallet-dir "$wallet_dir" --manifest "$manifest"
+npm run demo:fund -- --wallet-dir "$wallet_dir" --manifest "$manifest"
+npm run demo:deploy -- --wallet-dir "$wallet_dir" --manifest "$manifest"
+npm run demo:verify -- --wallet-dir "$wallet_dir" --manifest "$manifest"
+```
+
+`fund` requests the public Moderato faucet only for the deployer, owner and executor whose balances need funds; the recipient starts empty. `deploy` uses AlphaUSD for payment and fees by default, checks chain 42431 and six-decimal TIP-20 tokens, then verifies the finalized creation receipt and exact compiled factory runtime hash. Use `--token` and `--fee-token` consistently on every command to select other faucet-supported USD tokens. An existing deployment hash is verified without another broadcast. A lost broadcast reply leaves a `broadcasting` marker and stops automatic deployment until its original nonce/receipt is inspected.
+
+The public manifest supplies the backend's network, RPC, token, fee token, factory/hash, executor and authority settings. Configure the authority from its separate private file and persist backend state before exposing a Preview. The browser uses the owner's EIP-1193 wallet on Moderato; the exported capability is imported into the CLI, and the separate executor signs and submits the evaluated payment. Keep these test accounts distinct from wallets holding real funds. `npm run test:deployment` validates key isolation, configuration guards and deployment recovery without contacting a network.
+
 ## Sources examined on 2026-10-11
 
 Primary maintained sources were used instead of copying unaudited third-party escrow snippets:
