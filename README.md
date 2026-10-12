@@ -6,7 +6,9 @@ Contract and integration tests use private Tempo chains; the optional demo tooli
 
 ## Owner flow and contract bindings
 
-`AllowItTempoVaultFactory.createVault(policyId,token,executor,authority,terms,initialAmount)` deploys a non-upgradeable vault with CREATE2, then transfers the exact initial funding amount from `msg.sender`. The owner approves only the exact amount to the factory. A caller can create and fund only its own vault. `vaultOf(owner,policyId)` permanently identifies a created vault; a duplicate owner/policy deployment is rejected. `predictVault(owner,policyId,token,executor,authority,terms)` includes all constructor arguments in the address derivation.
+`AllowItTempoVaultFactory.createVault(policyId,token,executor,authority,terms,initialAmount)` deploys a non-upgradeable vault with CREATE2, then transfers the exact initial funding amount from `msg.sender`. The owner selects spending terms for the first deposit and approves only the exact deposit amount to the factory. Deposits may exceed the spending caps; available liquidity does not increase authorized spending. A caller can create and fund only its own vault. `vaultOf(owner,policyId)` permanently identifies a created vault; a duplicate owner/policy deployment is rejected. `predictVault(owner,policyId,token,executor,authority,terms)` includes all constructor arguments in the address derivation.
+
+Factory deployments are immutable. Applications must verify the configured factory runtime hash and require `DEPOSIT_TERMS_VERSION() == 1` before preparing a first deposit with deposit-selected terms. Earlier factories lack this capability marker and reject an initial deposit above the lifetime spending cap. Existing vault funding and owner recovery remain available through their original deployment.
 
 `Terms` is `(bytes32 policyDigest,bytes32 requirementsDigest,uint256 totalUnits,uint256 dailyUnits,uint256 actionUnits,uint64 expiresAt,address recipient,bool semanticRequired)`.
 
