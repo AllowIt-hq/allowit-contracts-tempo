@@ -32,7 +32,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          forge test --network tempo --match-path test/TempoNative.t.sol --match-test '^testRealTIP20FactoryFundExecuteMemoAndOwnerRecovery$' 2>&1 | tee "$RUNNER_TEMP/smoke.log"
+          forge test --network tempo --match-path test/TempoNative.t.sol --match-test '^testRealTIP20FactoryFundExecuteMemoAndOwnerRecovery\(\)$' 2>&1 | tee "$RUNNER_TEMP/smoke.log"
           grep -F "1 tests passed" "$RUNNER_TEMP/smoke.log"
       - name: Full native Tempo regressions
         if: github.event_name == 'workflow_dispatch' && inputs.full
