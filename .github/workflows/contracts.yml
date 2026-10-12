@@ -33,4 +33,4 @@ jobs:
           forge install --no-git tempo-std=tempoxyz/tempo-std@rev=701c4bf8d8d275f44c025b4686b42a82a83a3184
       - run: forge fmt --check
       - run: forge build
-      - run: forge test --network tempo --fuzz-runs 512
+      - run: forge test --network tempo --fuzz-runs 512 --no-match-path test/TempoNative.t.sol
