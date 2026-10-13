@@ -44,10 +44,6 @@ AlphaUSD is the default payment and fee token. To choose other supported six-dec
 
 Deployment checks chain ID, finalized receipt and factory runtime hash. The manifest records factory address, code hash, transaction and account addresses. Keep it for application configuration. If a broadcast loses its reply, inspect the original nonce and receipt before another deployment. Run `npm run test:deployment` for offline checks.
 
-## Mainnet deployments
-
-No AllowIt Tempo mainnet factory address is recorded in this repository. The deployment script accepts only Moderato testnet.
-
 ## Contract API
 
 [`AllowItTempoVaultFactory`](src/AllowItTempoVaultFactory.sol) creates one immutable vault per owner/policy using CREATE2:
