@@ -11,7 +11,7 @@ default = []
 client = ["dep:allowit-client-core", "dep:libc", "dep:mpp", "dep:reqwest", "dep:zeroize", "dep:num-bigint", "dep:num-traits", "dep:time"]
 
 [dependencies]
-allowit-client-core = { git = "https://github.com/AllowIt-hq/allowit-sdk.git", rev = "d99bca0001f86d04b2066e21e3f5ce089acb998f", optional = true }
+allowit-client-core = { git = "https://github.com/AllowIt-hq/allowit-sdk.git", rev = "d9a22d3c74667d41303f147ee4ba2e442cea3767", optional = true }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["raw_value", "arbitrary_precision"] }
 k256 = { version = "0.13", features = ["ecdsa"] }
