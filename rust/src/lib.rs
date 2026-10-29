@@ -10,6 +10,7 @@ pub const TERMS: &str = "(bytes32,bytes32,uint256,uint256,uint256,uint64,address
 pub const EXECUTION: &str = "(uint256,address,address,bytes32,bytes32,bytes32,uint64,uint64,address,uint256,uint64,bytes32,bytes32,bytes32)";
 pub const ZERO: &str = "0x0000000000000000000000000000000000000000";
 mod service;
+pub mod wallet;
 pub use service::{ServicePaymentRequest, validate_service_payment_request};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
