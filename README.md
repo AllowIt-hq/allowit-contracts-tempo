@@ -1,6 +1,6 @@
 # allowit-contracts-tempo
 
-Solidity vaults for policy-controlled TIP-20 payments on Tempo. An independent evidence authority approves each payment offchain. The vault checks its signature, policy binding and spending limits.
+Solidity vaults and a [Rust vendor crate](rust/README.md) for policy-controlled TIP-20 payments on Tempo. An independent evidence authority approves each payment offchain. The vault checks its signature, policy binding and spending limits.
 
 ## Build and test
 
