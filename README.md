@@ -2,6 +2,8 @@
 
 Solidity vaults and a [Rust vendor crate](rust/README.md) for policy-controlled TIP-20 payments on Tempo. An independent evidence authority approves each payment offchain. The vault checks its signature, policy binding and spending limits.
 
+[Tempo host services](rust/services/README.md) provide typed RPC requests and native transaction encoding to the SDK.
+
 ## Build and test
 
 Use Node 24 and [Foundry v1.8.5](https://github.com/foundry-rs/foundry/releases/tag/v1.8.5) or later with Tempo support. Install pinned dependencies:
