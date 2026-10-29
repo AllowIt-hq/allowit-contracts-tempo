@@ -378,6 +378,16 @@ pub(crate) fn prepare(bundle: &Bundle, intent: &Intent) -> Result<(Value, i32)> 
     };
     Ok((result, code))
 }
+fn public_policy(bundle: &Bundle) -> Result<Value> {
+    // Serialize the typed public schema, never arbitrary fields from the input file.
+    let policy: crate::Policy = serde_json::from_value(bundle.value["policy"].clone())
+        .map_err(|_| Error::config("Invalid Tempo policy description"))?;
+    serde_json::to_value(policy)
+        .map_err(|_| Error::config("Cannot encode Tempo policy description"))
+}
+pub(crate) fn describe(path: &std::path::Path) -> Result<Value> {
+    public_policy(&Bundle::read(path)?)
+}
 pub(crate) fn run(args: &[String], stdout: &mut String, stderr: &mut String) -> Result<i32> {
     let Some(command) = args.first() else {
         stderr.push_str(USAGE);
@@ -556,6 +566,26 @@ fn receipt_code(value: &Value) -> i32 {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn description_serializes_only_public_schema() {
+        let policy = serde_json::json!({
+            "id":"policy", "profile":"tempo-native-v1", "network":"tempo:testnet", "chainId":42431,
+            "owner":"owner", "token":"token", "executor":"executor", "authority":"authority",
+            "factory":"factory", "vault":"vault", "policyDigest":"digest", "requirementsDigest":"requirements",
+            "semanticRequired":false, "prompt":"prompt", "dailyLimit":"1", "actionLimit":"1", "totalLimit":"1",
+            "expiresAt":"100", "recipient":"recipient", "agentPrivateKey":"fixture-secret"
+        });
+        let bundle = super::Bundle {
+            value: serde_json::json!({"policy":policy,"capability":"fixture-capability"}),
+            origin: "https://service.invalid".into(),
+            capability: "fixture-capability".into(),
+        };
+        let output = super::public_policy(&bundle).unwrap();
+        assert!(output.get("agentPrivateKey").is_none());
+        assert!(!output.to_string().contains("fixture-secret"));
+        assert!(!output.to_string().contains("fixture-capability"));
+        assert_eq!(output["id"], "policy");
+    }
     use super::*;
     #[test]
     fn tempo_help_has_no_carriage_return_markers() {

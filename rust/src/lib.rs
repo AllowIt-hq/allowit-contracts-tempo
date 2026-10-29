@@ -1118,7 +1118,9 @@ fn validate_execution_request_mpp_inner(
 #[cfg(feature = "client")]
 extern crate self as allowit_tempo;
 #[cfg(feature = "client")]
-pub use allowit_client_core::{config, error, output};
+pub use allowit_client_core::{error, output};
+#[cfg(feature = "client")]
+pub mod config;
 #[cfg(feature = "client")]
 const VERSION: &str = "0.3.0-dev";
 #[cfg(feature = "client")]
@@ -1146,6 +1148,30 @@ mod tempo_transaction;
 #[cfg(feature = "client")]
 pub fn run(args: &[String], stdout: &mut String, stderr: &mut String) -> error::Result<i32> {
     tempo::run(args, stdout, stderr)
+}
+/// Run one invocation with an explicit request identity, without changing the environment.
+#[cfg(feature = "client")]
+pub fn run_with_request_id(
+    args: &[String],
+    id: Option<&str>,
+    stdout: &mut String,
+    stderr: &mut String,
+) -> error::Result<i32> {
+    if let Some(id) = id {
+        tempo::request_id(id)?;
+        let ambient = config::env_value("ALLOWIT_REQUEST_ID");
+        if !ambient.is_empty() && ambient != id {
+            return Err(error::Error::usage(
+                "Request ID differs from ALLOWIT_REQUEST_ID",
+            ));
+        }
+    }
+    config::with_request_id(id, || tempo::run(args, stdout, stderr))
+}
+/// Describe a validated bundle using only its public policy schema.
+#[cfg(feature = "client")]
+pub fn describe(path: &std::path::Path) -> error::Result<serde_json::Value> {
+    tempo::describe(path)
 }
 #[cfg(all(test, feature = "client"))]
 mod client;
