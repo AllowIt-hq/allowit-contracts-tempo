@@ -22,7 +22,7 @@ contract TempoNativeTest is Test {
         vm.warp(1_900_000_000);
         address created = StdPrecompiles.TIP20_FACTORY
             .createToken(
-                "AllowIt test USD", "AIT", "USD", StdTokens.PATH_USD, address(this), keccak256("allowit-native")
+                "Allowit test USD", "AIT", "USD", StdTokens.PATH_USD, address(this), keccak256("allowit-native")
             );
         token = ITIP20Token(created);
         token.grantRole(token.ISSUER_ROLE(), address(this));

@@ -1,5 +1,5 @@
 //! Native Tempo 0x76 encoding for self-paid executor calls.
-//! Adapted from AllowIt CLI e8223dca38038c0a6c05637e733f59959188483c.
+//! Adapted from Allowit CLI e8223dca38038c0a6c05637e733f59959188483c.
 //!
 //! This deliberately supports one EOA-signed call with zero native value,
 //! protocol nonce key zero, and an explicit fee token. It does not accept
