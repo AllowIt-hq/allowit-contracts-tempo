@@ -45,7 +45,7 @@ The commands behind `run`:
 | `submit` | Report a transaction hash for a plan the executor sent through its own wallet. |
 | `status` | Look up a request that reached a payment operation. |
 
-The transport supports Tempo testnet and localnet. MPP supports Tempo testnet (chain ID 42431) with charge or push and client-paid fees. Owner deployment, funding and recovery use browser signing, so no command here reads an owner or authority key, and only `pay` reads the executor key.
+The transport supports Tempo testnet and localnet. MPP supports Tempo testnet (chain ID 42431) with charge or push and client-paid fees. Owner deployment, funding and recovery use browser signing, so no command here reads an owner or authority key. Only `pay` and `call`, the two commands that sign, read the executor key.
 
 Configuration is all environment variables: `ALLOWIT_TEMPO_BUNDLE`, `ALLOWIT_TEMPO_EXECUTOR_KEY_FILE`, `ALLOWIT_TEMPO_RPC_URL`, `ALLOWIT_TEMPO_STATE_DIR`, `ALLOWIT_TEMPO_WAIT_SECONDS`, `ALLOWIT_TEMPO_MAX_GAS`, `ALLOWIT_TEMPO_MAX_FEE`, `ALLOWIT_REQUEST_ID` and a few more. [`src/tempo-usage.txt`](src/tempo-usage.txt) is the complete reference, including journal requirements, exit codes and the recovery rules worth reading before you run `pay` for real.
 
@@ -55,12 +55,13 @@ Configuration is all environment variables: `ALLOWIT_TEMPO_BUNDLE`, `ALLOWIT_TEM
 src/lib.rs                 Types, digests and offline verification
 src/service.rs             ServicePaymentRequest binding
 src/mpp.rs                 MPP challenge parsing and validation
-src/wallet.rs              Executor public-key helpers
-src/config.rs              Environment configuration (client)
+src/wallet.rs              Local secp256k1 key helpers, no I/O
+src/config.rs              Request identity and environment lookup (client)
 src/tempo.rs               Command dispatch and bundle handling (client)
 src/tempo_pay.rs           Signing, sending, journal and recovery (client)
 src/tempo_mpp.rs           402 challenge flow and HTTP delivery (client)
 src/tempo_rpc.rs           RPC client and finality checks (client)
+src/tempo_store.rs         Private journal scoped to executor and chain (client)
 src/tempo_transaction.rs   Native 0x76 encoding (client)
 src/tempo-usage.txt        Command and configuration reference
 ```

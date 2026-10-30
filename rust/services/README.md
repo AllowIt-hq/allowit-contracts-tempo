@@ -2,7 +2,7 @@
 
 *Typed Tempo RPC requests and native `0x76` transactions for the Allowit server*
 
-This small crate gives the Allowit server's service facade a Tempo vocabulary: typed JSON-RPC requests and one strict native transaction envelope. The server keeps every decision that matters, including policy admission, signer selection, journals, budgets and recovery. This crate only shapes the bytes. It builds on `allowit-service-core` and `allowit-service-transport` from the [Allowit SDK](https://github.com/allowit-hq/allowit-sdk).
+This small crate gives the Allowit SDK service facade a Tempo vocabulary: typed JSON-RPC requests and one strict native transaction envelope. The server keeps every decision that matters, including policy admission, signer selection, journals, budgets and recovery. This crate only shapes the bytes. It builds on `allowit-service-core` and `allowit-service-transport` from the [Allowit SDK](https://github.com/allowit-hq/allowit-sdk).
 
 ## What is inside
 

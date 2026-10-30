@@ -40,7 +40,7 @@ The repository has three parts:
 - **No replays, ever** - each payment needs the next nonce and an unused request hash. Tuning the terms bumps the revision and voids every older signature.
 - **Exact delivery** - the vault compares balances before and after each transfer. Fee-on-transfer tokens, redirected receipts and partial deliveries revert the whole payment.
 - **Owner stays in charge** - only the owner funds, tunes, revokes or withdraws. Funding never raises the spending caps. Withdrawal works even after expiry.
-- **No upgrades, no arbitrary calls** - the vault has no proxy, no approval surface and no way to call another contract.
+- **No upgrades, no arbitrary calls** - the vault has no proxy, grants no token approvals and calls nothing but its own token (plus one TIP-20 factory check at deployment).
 - **Native Tempo** - TIP-20 tokens, `transferWithMemo` for tagged payments, TIP-403 aware tests, and type `0x76` transactions paid in a TIP-20 fee token.
 - **Offline-first Rust** - the default crate build verifies a plan without a signing key or a network connection.
 
@@ -101,13 +101,13 @@ npm run demo:verify -- --manifest "$manifest"
 What each stage does:
 
 1. **wallets** creates five separate accounts: deployer, owner, executor, authority and recipient. Keys land in owner-only `0600` files inside a `0700` directory. The script refuses to overwrite keys or a manifest.
-2. **fund** calls the Tempo faucet once per account for deployer, owner and executor, then waits for the balances. The owner needs at least 40 USD in payment and fee tokens; the others need 10.
+2. **fund** tops up deployer, owner and executor with at most one Tempo faucet call per account, skipping any account that already holds enough, then waits for the balances. The owner needs at least 40 USD in payment and fee tokens; the others need 10.
 3. **deploy** checks the chain ID, writes the manifest before broadcasting, then sends one native `0x76` transaction that creates the factory.
 4. **verify** waits for the receipt, checks the transaction shape, compares the deployed code hash with the compiled runtime and waits for finality. It needs only the public manifest.
 
 AlphaUSD (`0x20c0000000000000000000000000000000000001`) is the default payment and fee token. To use another six-decimal USD TIP-20 token, pass the same `--token` and `--fee-token` to every command. `--rpc` and `--artifact` override the RPC URL and the compiled factory artifact.
 
-The manifest records the factory address, code hash, transaction hash, block number and account addresses. Keep it; your application reads it. If a broadcast loses its reply, the manifest stays at `broadcasting` and the script refuses a blind retry until you inspect the deployer nonce and receipt.
+The manifest records the factory address, code hash, transaction hash, block number and account addresses. Keep it for your application's configuration. If a broadcast loses its reply, the manifest stays at `broadcasting` and the script refuses a blind retry until you inspect the deployer nonce and receipt.
 
 Offline checks for the scripts run with:
 
@@ -160,6 +160,9 @@ Approve the exact initial amount before calling `createVault`. Funding may excee
 [`src/AllowItTempoVault.sol`](src/AllowItTempoVault.sol) fixes owner, token, executor, authority and policy ID at construction. The token must be a canonical TIP-20 with six decimals and `USD` currency.
 
 `Terms` is `(bytes32 policyDigest, bytes32 requirementsDigest, uint256 totalUnits, uint256 dailyUnits, uint256 actionUnits, uint64 expiresAt, address recipient, bool semanticRequired)`. A zero `recipient` permits any nonzero recipient that the authority signs. `actionUnits <= dailyUnits <= totalUnits` must hold.
+
+> [!NOTE]
+> The token issuer still has a say. A paused TIP-20 or a TIP-403 transfer policy can block funding, payments and owner recovery alike; the vault reverts cleanly rather than moving funds partially.
 
 | Method | Who | Effect |
 | --- | --- | --- |
@@ -228,13 +231,13 @@ scripts/                  Moderato deployment scripts and their offline tests
 rust/                     allowit-tempo vendor crate (verification + executor client)
 rust/services/            allowit-tempo-services host protocol crate
 .github/workflows/        contracts, runtime smoke, Rust vendor and services CI
-foundry.toml              Solidity 0.8.30, osaka EVM, via-IR, Tempo profile
+foundry.toml              Solidity 0.8.30, osaka EVM, via-IR, Tempo mode on
 dependencies.lock.json    Pinned Foundry library revisions
 ```
 
 ## The Allowit family
 
-Allowit policies are written in a restricted subset of Rust and evaluated the same way on every rail. This repository is the Tempo rail. Its siblings:
+Allowit policies are written in a restricted subset of Rust and run on a deterministic interpreter. Each rail enforces the result on its own chain, and this repository is the Tempo rail. Its siblings:
 
 - [allowit-sdk](https://github.com/allowit-hq/allowit-sdk) - the policy language, compiler, deterministic interpreter, CLI and language server. The Rust crates here depend on its `allowit-client-core` and `allowit-service-core` crates.
 - [allowit-cli](https://github.com/allowit-hq/allowit-cli) - the Go command-line client for evaluating and executing actions under a policy.
