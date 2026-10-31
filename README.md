@@ -5,9 +5,7 @@
 *Policy-controlled TIP-20 payment vaults for AI agents*
 
 [![Tempo contracts](https://img.shields.io/github/actions/workflow/status/allowit-hq/allowit-contracts-tempo/contracts.yml?style=flat-square&label=contracts)](https://github.com/allowit-hq/allowit-contracts-tempo/actions/workflows/contracts.yml)
-[![Tempo Rust vendor](https://img.shields.io/github/actions/workflow/status/allowit-hq/allowit-contracts-tempo/rust.yml?style=flat-square&label=rust)](https://github.com/allowit-hq/allowit-contracts-tempo/actions/workflows/rust.yml)
 [![Solidity 0.8.30](https://img.shields.io/badge/Solidity-0.8.30-363636?style=flat-square&logo=solidity)](foundry.toml)
-[![Rust 1.98](https://img.shields.io/badge/Rust-1.98-dea584?style=flat-square&logo=rust)](rust/Cargo.toml)
 [![Node.js >=24](https://img.shields.io/badge/Node.js->=24-3c873a?style=flat-square&logo=node.js&logoColor=white)](package.json)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 
@@ -17,7 +15,7 @@
 
 </div>
 
-Allowit lets your AI agents spend and invest, within a policy you set. This repository is the [Tempo](https://github.com/tempoxyz/tempo) rail: two small Solidity contracts that hold stablecoins for an agent, plus Rust crates that verify, sign and deliver each payment.
+Allowit lets your AI agents spend and invest, within a policy you set. This repository is the [Tempo](https://github.com/tempoxyz/tempo) rail: two small Solidity contracts that hold stablecoins for an agent. The Rust crates that verify, sign and deliver each payment live in [allowit-sdk](https://github.com/allowit-hq/allowit-sdk/tree/main/rails/tempo).
 
 You fund a vault. You name the executor that may spend, the authority that must approve, and the caps that never bend. The agent pays merchants from the vault. Everything else stays in your hands.
 
@@ -25,13 +23,13 @@ You fund a vault. You name the executor that may spend, the authority that must 
 
 An Allowit policy is evaluated offchain by an **evidence authority**, which signs a short EIP-712 attestation for one exact payment. The onchain vault does not run the policy. It checks that the attestation binds to this vault, this policy revision, this recipient and this amount, then checks the hard limits you set and moves the tokens. That split keeps the contract tiny and keeps your money behind rules a model cannot talk its way around.
 
-The repository has three parts:
+The rail has three parts:
 
 | Part | Where | What it does |
 | --- | --- | --- |
 | Solidity contracts | [`src/`](src) | `AllowItTempoVault` holds funds and enforces limits. `AllowItTempoVaultFactory` creates one vault per owner and policy. |
-| Rust vendor crate | [`rust/`](rust) | `allowit-tempo` verifies plans offline and, with the `client` feature, signs and sends native Tempo transactions, recovers interrupted payments and pays MPP `402` challenges. |
-| Rust host services | [`rust/services/`](rust/services) | `allowit-tempo-services` gives the Allowit server typed RPC requests and native `0x76` transaction encoding. |
+| Rust vendor crate | allowit-sdk [`rails/tempo/`](https://github.com/allowit-hq/allowit-sdk/tree/main/rails/tempo) | `allowit-tempo` verifies plans offline and, with the `client` feature, signs and sends native Tempo transactions, recovers interrupted payments and pays MPP `402` challenges. |
+| Rust host services | allowit-sdk [`rails/tempo/services/`](https://github.com/allowit-hq/allowit-sdk/tree/main/rails/tempo/services) | `allowit-tempo-services` gives the Allowit server typed RPC requests and native `0x76` transaction encoding. |
 
 ## Features
 
@@ -53,18 +51,15 @@ git clone https://github.com/allowit-hq/allowit-contracts-tempo.git
 cd allowit-contracts-tempo
 ```
 
-Install the pinned libraries. The exact revisions are recorded in [`dependencies.lock.json`](dependencies.lock.json):
+Install the pinned libraries and build. [`dependencies.lock.json`](dependencies.lock.json) pins each library by full commit, and `scripts/build.sh` installs exactly those commits into `lib/` (it needs `forge` and `jq`):
 
 ```sh
-forge install --no-git openzeppelin-contracts=OpenZeppelin/openzeppelin-contracts@rev=fcbae5394ae8ad52d8e580a3477db99814b9d565
-forge install --no-git forge-std=foundry-rs/forge-std@rev=0258fe875e1d8e207c1eb7175e542ea32356773c
-forge install --no-git tempo-std=tempoxyz/tempo-std@rev=701c4bf8d8d275f44c025b4686b42a82a83a3184
+scripts/build.sh
 ```
 
-Build, lint and test on the Tempo runtime:
+Lint and test on the Tempo runtime:
 
 ```sh
-forge build
 forge fmt --check
 forge test --network tempo -vv
 ```
@@ -203,37 +198,19 @@ When you read `getState()`, treat `spentToday` as zero if `spendDay` is behind t
 
 ## Rust crates
 
-### `allowit-tempo` (vendor crate)
+The Rust crates for this rail are in the Allowit SDK workspace, so they build at the SDK's version against the SDK core without a cross-repository pin:
 
-[`rust/`](rust/README.md) verifies Tempo plans against exact configuration, policy and transaction bindings, validates MPP challenges and, with the `client` feature, signs and sends payments as the designated executor with a durable journal for recovery.
-
-```sh
-cargo test --manifest-path rust/Cargo.toml --locked
-cargo test --manifest-path rust/Cargo.toml --locked --features client
-```
-
-The executor commands are `import`, `execute`, `pay`, `call`, `resume`, `submit` and `status`. Configuration comes from `ALLOWIT_TEMPO_*` environment variables. See [`rust/src/tempo-usage.txt`](rust/src/tempo-usage.txt) for the full reference and exit codes.
-
-### `allowit-tempo-services` (host services)
-
-[`rust/services/`](rust/services/README.md) packages typed RPC requests and native `0x76` transaction signing for the Allowit server. It signs one self-paid EOA call and refuses sponsorship, access keys, extra calls and noncanonical signatures.
-
-```sh
-cargo fmt --manifest-path rust/services/Cargo.toml --check
-cargo clippy --manifest-path rust/services/Cargo.toml --locked --all-targets -- -D warnings
-cargo test --manifest-path rust/services/Cargo.toml --locked
-```
+- [`allowit-tempo`](https://github.com/allowit-hq/allowit-sdk/tree/main/rails/tempo) verifies Tempo plans against exact configuration, policy and transaction bindings, validates MPP challenges and, with the `client` feature, signs and sends payments as the designated executor with a durable journal for recovery.
+- [`allowit-tempo-services`](https://github.com/allowit-hq/allowit-sdk/tree/main/rails/tempo/services) packages typed RPC requests and native `0x76` transaction signing for the Allowit server.
 
 ## Project structure
 
 ```
 src/                      Solidity vault and factory
 test/                     Foundry unit, invariant and native Tempo tests
-scripts/                  Moderato deployment scripts and their offline tests
-rust/                     allowit-tempo vendor crate (verification + executor client)
-rust/services/            allowit-tempo-services host protocol crate
+scripts/                  build.sh, Moderato deployment scripts and their offline tests
 docs/                     Vault lifecycle and transaction validation notes
-.github/workflows/        contracts, runtime smoke, Rust vendor and services CI
+.github/workflows/        contracts and runtime smoke CI
 foundry.toml              Solidity 0.8.30, osaka EVM, via-IR, Tempo mode on
 dependencies.lock.json    Pinned Foundry library revisions
 ```
@@ -242,7 +219,7 @@ dependencies.lock.json    Pinned Foundry library revisions
 
 Allowit policies are written in a restricted subset of Rust and run on a deterministic interpreter. Each rail enforces the result on its own chain, and this repository is the Tempo rail. Its siblings:
 
-- [allowit-sdk](https://github.com/allowit-hq/allowit-sdk) - the policy language, compiler, deterministic interpreter, CLI and language server. The Rust crates here depend on its `allowit-sdk` core crate (`core/`) for shared client, service and transport primitives.
+- [allowit-sdk](https://github.com/allowit-hq/allowit-sdk) - the policy language, compiler, deterministic interpreter, CLI and language server. It also holds this rail's Rust crates under `rails/tempo/`.
 - [allowit-cli](https://github.com/allowit-hq/allowit-cli) - the Go command-line client for evaluating and executing actions under a policy.
 - [allowit-contracts-stellar](https://github.com/allowit-hq/allowit-contracts-stellar) - policy vaults and factory for Stellar.
 - [allowit-contracts-solana](https://github.com/allowit-hq/allowit-contracts-solana) - policy evaluator and custody vault for Solana.
@@ -259,8 +236,8 @@ Allowit policies are written in a restricted subset of Rust and run on a determi
 
 ## Contributing
 
-Issues and pull requests are welcome. Before you open one, run the same checks CI runs: `forge fmt --check`, `forge build`, `forge test --network tempo`, `npm run test:deployment`, and the Cargo commands above for the crates you touched. Keep the pinned dependency revisions unless the change is about updating them.
+Issues and pull requests are welcome. Before you open one, run the same checks CI runs: `scripts/build.sh`, `forge fmt --check`, `forge test --network tempo` and `npm run test:deployment`. Keep the pinned dependency revisions in `dependencies.lock.json` unless the change is about updating them.
 
 ## License
 
-The contracts, scripts and the `allowit-tempo` crate are released under the [MIT License](LICENSE). The `allowit-tempo-services` crate carries `LicenseRef-Proprietary` in its [`Cargo.toml`](rust/services/Cargo.toml); see that crate's [README](rust/services/README.md).
+The contracts and scripts are released under the [MIT License](LICENSE).

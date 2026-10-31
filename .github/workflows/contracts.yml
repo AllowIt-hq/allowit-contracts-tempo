@@ -26,11 +26,6 @@ jobs:
       - uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09
         with:
           version: v1.8.5
-      - name: Install pinned dependencies
-        run: |
-          forge install --no-git openzeppelin-contracts=OpenZeppelin/openzeppelin-contracts@rev=fcbae5394ae8ad52d8e580a3477db99814b9d565
-          forge install --no-git forge-std=foundry-rs/forge-std@rev=0258fe875e1d8e207c1eb7175e542ea32356773c
-          forge install --no-git tempo-std=tempoxyz/tempo-std@rev=701c4bf8d8d275f44c025b4686b42a82a83a3184
+      - run: scripts/build.sh
       - run: forge fmt --check
-      - run: forge build
       - run: forge test --network tempo --fuzz-runs 512 --no-match-path test/TempoNative.t.sol

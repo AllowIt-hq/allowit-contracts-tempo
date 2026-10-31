@@ -11,4 +11,3 @@
 *.db
 node_modules/
 
-/rust/target/

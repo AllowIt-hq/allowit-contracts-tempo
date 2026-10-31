@@ -1,6 +1,6 @@
 # Tempo vault lifecycle
 
-The [`rust/`](../rust/) crate (`allowit-tempo`) validates prepared owner and executor transactions offline.
+The [`allowit-tempo`](https://github.com/allowit-hq/allowit-sdk/tree/main/rails/tempo) crate in allowit-sdk validates prepared owner and executor transactions offline.
 It does not hold keys, perform RPC calls, broadcast transactions or assert settlement.
 The application backend owns policy evaluation, Jev assessment, owner-input
 continuations and durable operation records. Tempo contracts enforce the funded
