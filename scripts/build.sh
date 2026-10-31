@@ -8,11 +8,14 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 [ $# = 0 ] || { echo "usage: scripts/build.sh" >&2; exit 2; }
 
+deps=$(jq -er '.dependencies | to_entries[] | [.key, .value.repository, .value.revision]
+                | @tsv' dependencies.lock.json)
 while IFS=$'\t' read -r name repo rev; do
+  [ -n "$name" ] && [ -n "$rev" ] || { echo "dependencies.lock.json: bad entry" >&2; exit 1; }
   [ "$(cat "lib/$name/.revision" 2>/dev/null)" = "$rev" ] && continue
   rm -rf "lib/$name"
   forge install --no-git "$name=${repo#https://github.com/}@rev=$rev"
   echo "$rev" > "lib/$name/.revision"
-done < <(jq -r '.dependencies | to_entries[] | [.key, .value.repository, .value.revision] | @tsv' dependencies.lock.json)
+done <<<"$deps"
 
 forge build
