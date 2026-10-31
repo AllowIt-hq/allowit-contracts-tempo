@@ -4,7 +4,7 @@
 //! This deliberately supports one EOA-signed call with zero native value,
 //! protocol nonce key zero, and an explicit fee token. It does not accept
 //! sponsorship, access-key authorization, delegation, or additional calls.
-use allowit_service_core::{Error as Fault, Result, fault};
+use allowit_sdk::service::{Error as Fault, Result, fault};
 use k256::ecdsa::{RecoveryId, Signature, SigningKey, VerifyingKey};
 use serde::{Deserialize, Serialize};
 use sha3::{Digest, Keccak256};

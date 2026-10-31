@@ -6,7 +6,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: tempo-rust-${{ github.ref }}
+  group: allowit-tempo-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   vendor:

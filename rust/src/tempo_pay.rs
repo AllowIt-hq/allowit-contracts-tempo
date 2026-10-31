@@ -174,7 +174,7 @@ fn state_path(bundle: &Bundle) -> Result<PathBuf> {
     Ok(base.join(format!("{chain}-{}", executor.to_ascii_lowercase())))
 }
 fn read_key(path: &std::path::Path, expected: &str) -> Result<Zeroizing<[u8; 32]>> {
-    allowit_client_core::journal::require_supported_platform().map_err(|_| {
+    allowit_sdk::client::journal::require_supported_platform().map_err(|_| {
         Error::config("Tempo signing requires Linux/WSL and private local POSIX key storage")
     })?;
     let mut options = OpenOptions::new();
@@ -863,7 +863,7 @@ pub(crate) fn run(
     stdout: &mut String,
     stderr: &mut String,
 ) -> Result<i32> {
-    allowit_client_core::journal::require_supported_platform().map_err(|_| {
+    allowit_sdk::client::journal::require_supported_platform().map_err(|_| {
         Error::config(
             "Tempo pay/resume requires Linux/WSL with journal and keys in its Linux filesystem",
         )

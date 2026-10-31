@@ -1,4 +1,4 @@
-use allowit_service_core::rpc::Operation;
+use allowit_sdk::service::rpc::Operation;
 use serde_json::json;
 #[test]
 fn managed_tempo_wire_and_verification_classification_remain_vendor_owned() {
