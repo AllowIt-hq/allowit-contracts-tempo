@@ -16,6 +16,10 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Install Rust
         run: rustup toolchain install 1.98.0 --profile minimal --component rustfmt --component clippy
+      - name: Check the allowit-sdk pin and build
+        env:
+          RUSTUP_TOOLCHAIN: 1.98.0
+        run: scripts/build.sh
       - name: Check formatting
         run: cargo +1.98.0 fmt --manifest-path rust/Cargo.toml --check
       - name: Check offline verifier

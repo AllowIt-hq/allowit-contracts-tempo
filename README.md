@@ -203,6 +203,18 @@ When you read `getState()`, treat `spentToday` as zero if `spendDay` is behind t
 
 ## Rust crates
 
+### Build and pins
+
+`rust/` is one Cargo workspace with one lockfile and one version: `allowit-tempo` and its member `allowit-tempo-services`. `allowit-sdk` is the only git dependency. It is declared once in `rust/Cargo.toml`, and `[workspace.metadata.allowit.track]` says which commit it must be pinned to: `"head"` (the default branch tip), `{ branch = "name" }` or `{ version = "1.2.3" }` (tag `v1.2.3`).
+
+```sh
+scripts/build.sh            # fail on a stale allowit-sdk pin, then build the workspace with all features
+scripts/build.sh --check    # only check the pin
+scripts/build.sh --update   # move a stale pin to its tracked commit, refresh rust/Cargo.lock, then build
+```
+
+The script needs `git`, `cargo` and `jq`.
+
 ### `allowit-tempo` (vendor crate)
 
 [`rust/`](rust/README.md) verifies Tempo plans against exact configuration, policy and transaction bindings, validates MPP challenges and, with the `client` feature, signs and sends payments as the designated executor with a durable journal for recovery.

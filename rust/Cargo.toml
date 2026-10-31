@@ -1,6 +1,6 @@
 [package]
 name = "allowit-tempo"
-version = "0.1.0"
+version.workspace = true
 edition = "2024"
 rust-version = "1.98"
 license = "MIT"
@@ -11,7 +11,7 @@ default = []
 client = ["dep:allowit-sdk", "dep:libc", "dep:mpp", "dep:reqwest", "dep:zeroize", "dep:num-bigint", "dep:num-traits", "dep:time"]
 
 [dependencies]
-allowit-sdk = { git = "https://github.com/allowit-hq/allowit-sdk.git", rev = "67f5d696847992e18131f815ce905713ec3646e1", default-features = false, features = ["client"], optional = true }
+allowit-sdk = { workspace = true, features = ["client"], optional = true }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["raw_value", "arbitrary_precision"] }
 k256 = { version = "0.13", features = ["ecdsa"] }
@@ -30,3 +30,16 @@ num-traits = { version = "0.2.19", optional = true }
 time = { version = "0.3", features = ["parsing"], optional = true }
 
 [workspace]
+members = ["services"]
+
+# Every package in this repository builds at this version.
+[workspace.package]
+version = "0.1.0"
+
+# The revision each git repository must be pinned to. scripts/build.sh checks
+# every git dependency below against this table and fails on a stale pin.
+[workspace.metadata.allowit.track]
+allowit-sdk = "head"
+
+[workspace.dependencies]
+allowit-sdk = { git = "https://github.com/allowit-hq/allowit-sdk.git", rev = "2ce05b873baea0a32ba7a36bf4add4a60c491293", default-features = false }
