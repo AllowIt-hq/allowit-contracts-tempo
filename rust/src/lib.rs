@@ -1118,7 +1118,7 @@ fn validate_execution_request_mpp_inner(
 #[cfg(feature = "client")]
 extern crate self as allowit_tempo;
 #[cfg(feature = "client")]
-pub use allowit_client_core::{error, output};
+pub use allowit_sdk::client::{error, output};
 #[cfg(feature = "client")]
 pub mod config;
 #[cfg(feature = "client")]

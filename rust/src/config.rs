@@ -1,5 +1,5 @@
 //! Invocation-scoped request identity without process-wide environment mutation.
-pub use allowit_client_core::config::parse_origin;
+pub use allowit_sdk::client::config::parse_origin;
 use std::cell::RefCell;
 thread_local! {
     static REQUEST_ID: RefCell<Option<String>> = const { RefCell::new(None) };
@@ -10,7 +10,7 @@ pub fn env_value(name: &str) -> String {
     {
         return value;
     }
-    allowit_client_core::config::env_value(name)
+    allowit_sdk::client::config::env_value(name)
 }
 pub(crate) fn with_request_id<T>(value: Option<&str>, run: impl FnOnce() -> T) -> T {
     struct Restore(Option<String>);

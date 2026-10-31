@@ -2,14 +2,14 @@
 
 *Verify, sign and deliver Tempo payments for an Allowit vault*
 
-This crate is the Rust side of the [Allowit Tempo rail](../README.md). It owns plan verification, native `0x76` transactions, executor recovery, MPP challenge validation and paid HTTP delivery. The Allowit SDK client facade calls into it; the crate uses shared client primitives from `allowit-client-core` and never depends on the facade.
+This crate is the Rust side of the [Allowit Tempo rail](../README.md). It owns plan verification, native `0x76` transactions, executor recovery, MPP challenge validation and paid HTTP delivery. The Allowit SDK CLI calls into it through `cli/vendors/tempo`. The crate uses shared client primitives from the `allowit-sdk` core crate (`client` feature) and never depends on the SDK CLI or engine.
 
 ## Two ways to build it
 
 | Build | What you get |
 | --- | --- |
 | default | Offline verification only. No signing key is read and no network request is sent. |
-| `--features client` | Executor transport, signing and a durable journal for recovery. Pulls in `allowit-client-core`, `mpp`, `reqwest` and friends. |
+| `--features client` | Executor transport, signing and a durable journal for recovery. Pulls in `allowit-sdk` (core, `client` feature), `mpp`, `reqwest` and friends. |
 
 ```sh
 cargo test --manifest-path rust/Cargo.toml --locked

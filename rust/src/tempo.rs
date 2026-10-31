@@ -435,7 +435,7 @@ pub(crate) fn run(args: &[String], stdout: &mut String, stderr: &mut String) -> 
         )));
     }
     if command == "import" {
-        allowit_client_core::journal::require_supported_platform().map_err(|_| {
+        allowit_sdk::client::journal::require_supported_platform().map_err(|_| {
             Error::config("Import requires a local POSIX filesystem for private capability storage")
         })?;
         let bundle = Bundle::read(std::path::Path::new(pos[0]))?;

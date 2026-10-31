@@ -8,10 +8,10 @@ publish = false
 
 [features]
 default = []
-client = ["dep:allowit-client-core", "dep:libc", "dep:mpp", "dep:reqwest", "dep:zeroize", "dep:num-bigint", "dep:num-traits", "dep:time"]
+client = ["dep:allowit-sdk", "dep:libc", "dep:mpp", "dep:reqwest", "dep:zeroize", "dep:num-bigint", "dep:num-traits", "dep:time"]
 
 [dependencies]
-allowit-client-core = { git = "https://github.com/allowit-hq/allowit-sdk.git", rev = "d9a22d3c74667d41303f147ee4ba2e442cea3767", optional = true }
+allowit-sdk = { git = "https://github.com/allowit-hq/allowit-sdk.git", rev = "67f5d696847992e18131f815ce905713ec3646e1", default-features = false, features = ["client"], optional = true }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["raw_value", "arbitrary_precision"] }
 k256 = { version = "0.13", features = ["ecdsa"] }

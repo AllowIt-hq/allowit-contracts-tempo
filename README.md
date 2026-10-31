@@ -140,6 +140,8 @@ npm run test:deployment
 
 Settlement consumers should confirm the `Executed` event and the TIP-20 `Transfer` in a finalized block, with the expected caller, target and calldata. Record chain ID, transaction hash and log index before any retry.
 
+[`docs/tempo-vault.md`](docs/tempo-vault.md) describes the vault lifecycle and the transactions that the Rust crate validates offline.
+
 ## Contract API
 
 ### `AllowItTempoVaultFactory`
@@ -230,6 +232,7 @@ test/                     Foundry unit, invariant and native Tempo tests
 scripts/                  Moderato deployment scripts and their offline tests
 rust/                     allowit-tempo vendor crate (verification + executor client)
 rust/services/            allowit-tempo-services host protocol crate
+docs/                     Vault lifecycle and transaction validation notes
 .github/workflows/        contracts, runtime smoke, Rust vendor and services CI
 foundry.toml              Solidity 0.8.30, osaka EVM, via-IR, Tempo mode on
 dependencies.lock.json    Pinned Foundry library revisions
@@ -239,7 +242,7 @@ dependencies.lock.json    Pinned Foundry library revisions
 
 Allowit policies are written in a restricted subset of Rust and run on a deterministic interpreter. Each rail enforces the result on its own chain, and this repository is the Tempo rail. Its siblings:
 
-- [allowit-sdk](https://github.com/allowit-hq/allowit-sdk) - the policy language, compiler, deterministic interpreter, CLI and language server. The Rust crates here depend on its `allowit-client-core` and `allowit-service-core` crates.
+- [allowit-sdk](https://github.com/allowit-hq/allowit-sdk) - the policy language, compiler, deterministic interpreter, CLI and language server. The Rust crates here depend on its `allowit-sdk` core crate (`core/`) for shared client, service and transport primitives.
 - [allowit-cli](https://github.com/allowit-hq/allowit-cli) - the Go command-line client for evaluating and executing actions under a policy.
 - [allowit-contracts-stellar](https://github.com/allowit-hq/allowit-contracts-stellar) - policy vaults and factory for Stellar.
 - [allowit-contracts-solana](https://github.com/allowit-hq/allowit-contracts-solana) - policy evaluator and custody vault for Solana.
